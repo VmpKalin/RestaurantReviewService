@@ -1,0 +1,6 @@
+@ToptalFinialSolution_HostAddress = http://localhost:5105
+
+GET {{ToptalFinialSolution_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

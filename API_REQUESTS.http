@@ -1,0 +1,144 @@
+### Restaurant Review API - Sample HTTP Requests
+### Use this file with VS Code REST Client extension or similar tools
+
+@baseUrl = https://localhost:7000
+@reviewerToken = 
+@ownerToken = 
+
+### 1. Sign Up - Reviewer
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "reviewer@example.com",
+  "password": "Password123",
+  "fullName": "John Reviewer",
+  "userType": 1
+}
+
+### 2. Sign Up - Owner
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "owner@example.com",
+  "password": "Password123",
+  "fullName": "Jane Owner",
+  "userType": 2
+}
+
+### 3. Login - Reviewer
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "reviewer@example.com",
+  "password": "Password123"
+}
+
+### 4. Login - Owner
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "owner@example.com",
+  "password": "Password123"
+}
+
+### 5. Get Current User Info
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{reviewerToken}}
+
+### 6. Create Restaurant (Owner) - with Address
+POST {{baseUrl}}/api/restaurants
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "title": "Amazing Pizza Place",
+  "description": "Best pizza in town with authentic Italian recipes and a cozy atmosphere",
+  "address": "Alexanderplatz, Berlin, Germany",
+  "previewImage": "https://example.com/pizza.jpg"
+}
+
+### 7. Create Restaurant (Owner) - with Coordinates
+POST {{baseUrl}}/api/restaurants
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "title": "Sushi Paradise",
+  "description": "Fresh sushi and Japanese cuisine in the heart of the city",
+  "latitude": 52.520008,
+  "longitude": 13.404954,
+  "previewImage": "https://example.com/sushi.jpg"
+}
+
+### 8. Get All Restaurants (Public)
+GET {{baseUrl}}/api/restaurants?page=1&pageSize=10
+
+### 9. Get Restaurants by Title Filter
+GET {{baseUrl}}/api/restaurants?titleFilter=pizza
+
+### 10. Get Restaurants by Location (within 5 miles)
+GET {{baseUrl}}/api/restaurants?latitude=52.520008&longitude=13.404954&radiusInMiles=5
+
+### 11. Get Restaurant by ID
+GET {{baseUrl}}/api/restaurants/{restaurant_id}
+
+### 12. Update Restaurant (Owner)
+PUT {{baseUrl}}/api/restaurants/{restaurant_id}
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "title": "Amazing Pizza Place - Updated",
+  "description": "Best pizza in town with authentic Italian recipes, now with outdoor seating"
+}
+
+### 13. Delete Restaurant (Owner)
+DELETE {{baseUrl}}/api/restaurants/{restaurant_id}
+Authorization: Bearer {{ownerToken}}
+
+### 14. Create Review (Reviewer)
+POST {{baseUrl}}/api/reviews
+Authorization: Bearer {{reviewerToken}}
+Content-Type: application/json
+
+{
+  "restaurantId": "{restaurant_id}",
+  "reviewText": "Absolutely loved this place! The pizza was delicious, the service was excellent, and the atmosphere was perfect for a family dinner.",
+  "rating": 5
+}
+
+### 15. Get All Reviews (Public)
+GET {{baseUrl}}/api/reviews?page=1&pageSize=10
+
+### 16. Get Reviews for Specific Restaurant
+GET {{baseUrl}}/api/reviews?restaurantId={restaurant_id}
+
+### 17. Get Recently Viewed Restaurants (Reviewer)
+GET {{baseUrl}}/api/restaurants/recently-viewed
+Authorization: Bearer {{reviewerToken}}
+
+### Test Scenarios
+
+### Scenario 1: Complete Owner Workflow
+# 1. Sign up as owner
+# 2. Login to get token
+# 3. Create restaurant
+# 4. Update restaurant
+# 5. View restaurant
+
+### Scenario 2: Complete Reviewer Workflow
+# 1. Sign up as reviewer
+# 2. Login to get token
+# 3. Browse restaurants
+# 4. View restaurant details (auto-tracked)
+# 5. Create review
+# 6. Check recently viewed
+
+### Scenario 3: Location-based Search
+# 1. Create multiple restaurants in different locations
+# 2. Search by location with radius
+# 3. Verify results are within radius
