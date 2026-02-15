@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using ToptalFinialSolution.Domain.Entities;
 using ToptalFinialSolution.Domain.Interfaces;
 using ToptalFinialSolution.Infrastructure.Data;
@@ -27,19 +28,15 @@ public class RestaurantRepository : Repository<Restaurant>, IRestaurantRepositor
             query = query.Where(r => r.Title.Contains(titleFilter));
         }
 
-        // Apply location filter (Haversine formula)
+        // Apply location filter using PostGIS ST_DWithin (uses GIST index)
         if (latitude.HasValue && longitude.HasValue && radiusInMiles.HasValue)
         {
-            var radiusInKm = radiusInMiles.Value * 1.60934;
+            var radiusInMeters = radiusInMiles.Value * 1609.34;
+            var searchPoint = new Point(longitude.Value, latitude.Value) { SRID = 4326 };
+
             query = query.Where(r =>
-                (6371 * Math.Acos(
-                    Math.Cos(latitude.Value * Math.PI / 180) *
-                    Math.Cos(r.Latitude * Math.PI / 180) *
-                    Math.Cos((r.Longitude - longitude.Value) * Math.PI / 180) +
-                    Math.Sin(latitude.Value * Math.PI / 180) *
-                    Math.Sin(r.Latitude * Math.PI / 180)
-                )) <= radiusInKm
-            );
+                r.Location != null &&
+                r.Location.IsWithinDistance(searchPoint, radiusInMeters));
         }
 
         var totalCount = await query.CountAsync();

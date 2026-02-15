@@ -1,17 +1,26 @@
+using Microsoft.EntityFrameworkCore;
 using ToptalFinialSolution.Application.DTOs;
 using ToptalFinialSolution.Application.Interfaces;
 using ToptalFinialSolution.Domain.Enums;
 using ToptalFinialSolution.Domain.Interfaces;
+using ToptalFinialSolution.Infrastructure.Data;
 
 namespace ToptalFinialSolution.Application.Services;
 
 public class ViewedRestaurantService : IViewedRestaurantService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IViewedRestaurantRedisRepository _redisRepository;
+    private readonly ApplicationDbContext _context;
 
-    public ViewedRestaurantService(IUnitOfWork unitOfWork)
+    public ViewedRestaurantService(
+        IUnitOfWork unitOfWork, 
+        IViewedRestaurantRedisRepository redisRepository,
+        ApplicationDbContext context)
     {
         _unitOfWork = unitOfWork;
+        _redisRepository = redisRepository;
+        _context = context;
     }
 
     public async Task RecordViewAsync(Guid userId, Guid restaurantId)
@@ -30,8 +39,8 @@ public class ViewedRestaurantService : IViewedRestaurantService
             throw new KeyNotFoundException("Restaurant not found");
         }
 
-        await _unitOfWork.ViewedRestaurants.RecordViewAsync(userId, restaurantId);
-        await _unitOfWork.SaveChangesAsync();
+        // Record view in Redis (no DB persistence needed)
+        await _redisRepository.RecordViewAsync(userId, restaurantId);
     }
 
     public async Task<IEnumerable<RestaurantDto>> GetRecentlyViewedAsync(Guid userId)
@@ -43,11 +52,29 @@ public class ViewedRestaurantService : IViewedRestaurantService
             throw new UnauthorizedAccessException("Only reviewers can view recently viewed restaurants");
         }
 
-        var restaurants = await _unitOfWork.ViewedRestaurants.GetRecentlyViewedAsync(userId, 10);
-
-        return restaurants.Select(r => new RestaurantDto
+        // Get restaurant IDs from Redis
+        var restaurantIds = await _redisRepository.GetRecentlyViewedRestaurantIdsAsync(userId, 10);
+        
+        if (!restaurantIds.Any())
         {
-            Id = r.Id,
+            return Enumerable.Empty<RestaurantDto>();
+        }
+
+        // Fetch restaurant details from database
+        var restaurants = await _context.Restaurants
+            .Where(r => restaurantIds.Contains(r.Id))
+            .Include(r => r.Owner)
+            .ToListAsync();
+        
+        // Maintain the order from Redis (most recent first)
+        var orderedRestaurants = restaurantIds
+            .Select(id => restaurants.FirstOrDefault(r => r.Id == id))
+            .Where(r => r != null)
+            .ToList();
+
+        return orderedRestaurants.Select(r => new RestaurantDto
+        {
+            Id = r!.Id,
             Title = r.Title,
             PreviewImage = r.PreviewImage,
             Latitude = r.Latitude,

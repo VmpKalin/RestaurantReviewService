@@ -12,20 +12,17 @@ public class UnitOfWork : IUnitOfWork
     public IUserRepository Users { get; }
     public IRestaurantRepository Restaurants { get; }
     public IReviewRepository Reviews { get; }
-    public IViewedRestaurantRepository ViewedRestaurants { get; }
 
     public UnitOfWork(
         ApplicationDbContext context,
         IUserRepository users,
         IRestaurantRepository restaurants,
-        IReviewRepository reviews,
-        IViewedRestaurantRepository viewedRestaurants)
+        IReviewRepository reviews)
     {
         _context = context;
         Users = users;
         Restaurants = restaurants;
         Reviews = reviews;
-        ViewedRestaurants = viewedRestaurants;
     }
 
     public async Task<int> SaveChangesAsync()

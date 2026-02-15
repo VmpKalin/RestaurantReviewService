@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using ToptalFinialSolution.API.Filters;
 using ToptalFinialSolution.Application.DTOs;
 using ToptalFinialSolution.Application.Interfaces;
 
@@ -44,25 +45,13 @@ public class RestaurantsController : ControllerBase
     /// </summary>
     [HttpGet("{id}")]
     [AllowAnonymous]
+    [TrackRestaurantView]
     public async Task<ActionResult<RestaurantDto>> GetRestaurant(Guid id)
     {
         var restaurant = await _restaurantService.GetRestaurantByIdAsync(id);
         if (restaurant == null)
         {
             return NotFound(new { message = "Restaurant not found" });
-        }
-
-        // Record view if user is authenticated and is a reviewer
-        if (User.Identity?.IsAuthenticated == true && User.IsInRole("Reviewer"))
-        {
-            try
-            {
-                await _viewedRestaurantService.RecordViewAsync(GetCurrentUserId(), id);
-            }
-            catch
-            {
-                // Silently fail - viewing should not prevent getting restaurant details
-            }
         }
 
         return Ok(restaurant);

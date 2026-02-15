@@ -114,14 +114,13 @@ public class RestaurantService : IRestaurantService
             Id = Guid.NewGuid(),
             Title = request.Title,
             PreviewImage = request.PreviewImage,
-            Latitude = latitude,
-            Longitude = longitude,
             Description = request.Description,
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow,
             AverageRating = 0,
             ReviewCount = 0
         };
+        restaurant.SetCoordinates(latitude, longitude);
 
         await _unitOfWork.Restaurants.AddAsync(restaurant);
         await _unitOfWork.SaveChangesAsync();
@@ -172,11 +171,10 @@ public class RestaurantService : IRestaurantService
             restaurant.Description = request.Description;
         }
 
-        // Update coordinates
+        // Update coordinates (keeps Location point in sync)
         if (request.Latitude.HasValue && request.Longitude.HasValue)
         {
-            restaurant.Latitude = request.Latitude.Value;
-            restaurant.Longitude = request.Longitude.Value;
+            restaurant.SetCoordinates(request.Latitude.Value, request.Longitude.Value);
         }
         else if (!string.IsNullOrWhiteSpace(request.Address))
         {
@@ -185,8 +183,7 @@ public class RestaurantService : IRestaurantService
             {
                 throw new InvalidOperationException("Unable to geocode the provided address");
             }
-            restaurant.Latitude = coordinates.Value.Latitude;
-            restaurant.Longitude = coordinates.Value.Longitude;
+            restaurant.SetCoordinates(coordinates.Value.Latitude, coordinates.Value.Longitude);
         }
 
         restaurant.UpdatedAt = DateTime.UtcNow;
