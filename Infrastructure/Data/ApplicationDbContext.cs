@@ -1,15 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 using ToptalFinialSolution.Domain.Entities;
 
 namespace ToptalFinialSolution.Infrastructure.Data;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<User> Users { get; set; }
     public DbSet<Restaurant> Restaurants { get; set; }
     public DbSet<Review> Reviews { get; set; }

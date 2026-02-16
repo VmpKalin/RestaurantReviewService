@@ -25,6 +25,7 @@ builder.Services.AddControllers()
 // Configure OpenAPI
 builder.Services.AddOpenApi();
 
+
 // Configure Database (PostgreSQL + PostGIS via NetTopologySuite)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
@@ -97,15 +98,20 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-
-// Configure the HTTP request pipeline.
-app.UseMiddleware<ErrorHandlingMiddleware>();
-
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference();
+
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("RestaurantReviewService API")
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
 }
+
+// Configure the HTTP request pipeline.
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
