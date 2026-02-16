@@ -7,16 +7,13 @@ namespace ToptalFinialSolution.Infrastructure.Repositories;
 /// Redis repository implementation for storing viewed restaurants history
 /// Uses Sorted Sets with UserId as key, RestaurantId as member, and Unix timestamp as score
 /// </summary>
-public class ViewedRestaurantRedisRepository : RedisRepository<Guid, Guid>, IViewedRestaurantRedisRepository
+public class ViewedRestaurantRedisRepository(IConnectionMultiplexer redis)
+    : RedisRepository<Guid, Guid>(redis, KeyPrefix, MaxViewedRestaurants, ExpirationDays),
+        IViewedRestaurantRedisRepository
 {
     private const string KeyPrefix = "viewed:restaurants:";
     private const int MaxViewedRestaurants = 100;
     private const int ExpirationDays = 90;
-
-    public ViewedRestaurantRedisRepository(IConnectionMultiplexer redis)
-        : base(redis, KeyPrefix, MaxViewedRestaurants, ExpirationDays)
-    {
-    }
 
     public async Task RecordViewAsync(Guid userId, Guid restaurantId)
     {

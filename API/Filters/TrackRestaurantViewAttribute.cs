@@ -6,9 +6,4 @@ namespace ToptalFinialSolution.API.Filters;
 /// Attribute to mark actions that should track restaurant views
 /// Uses TypeFilterAttribute to enable dependency injection in the filter
 /// </summary>
-public class TrackRestaurantViewAttribute : TypeFilterAttribute
-{
-    public TrackRestaurantViewAttribute() : base(typeof(TrackRestaurantViewFilter))
-    {
-    }
-}
+public class TrackRestaurantViewAttribute() : TypeFilterAttribute(typeof(TrackRestaurantViewFilter));

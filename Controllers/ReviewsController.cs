@@ -9,15 +9,8 @@ namespace ToptalFinialSolution.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ReviewsController : ControllerBase
+public class ReviewsController(IReviewService reviewService) : ControllerBase
 {
-    private readonly IReviewService _reviewService;
-
-    public ReviewsController(IReviewService reviewService)
-    {
-        _reviewService = reviewService;
-    }
-
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -31,7 +24,7 @@ public class ReviewsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<PagedResult<ReviewDto>>> GetReviews([FromQuery] ReviewListQuery query)
     {
-        var result = await _reviewService.GetReviewsAsync(query);
+        var result = await reviewService.GetReviewsAsync(query);
         return Ok(result);
     }
 
@@ -45,7 +38,7 @@ public class ReviewsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var review = await _reviewService.CreateReviewAsync(request, userId);
+            var review = await reviewService.CreateReviewAsync(request, userId);
             return CreatedAtAction(nameof(GetReviews), new { restaurantId = review.RestaurantId }, review);
         }
         catch (KeyNotFoundException ex)

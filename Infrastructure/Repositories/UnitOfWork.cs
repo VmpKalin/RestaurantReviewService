@@ -4,35 +4,27 @@ using ToptalFinialSolution.Infrastructure.Data;
 
 namespace ToptalFinialSolution.Infrastructure.Repositories;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork(
+    ApplicationDbContext context,
+    IUserRepository users,
+    IRestaurantRepository restaurants,
+    IReviewRepository reviews)
+    : IUnitOfWork
 {
-    private readonly ApplicationDbContext _context;
     private IDbContextTransaction? _transaction;
 
-    public IUserRepository Users { get; }
-    public IRestaurantRepository Restaurants { get; }
-    public IReviewRepository Reviews { get; }
-
-    public UnitOfWork(
-        ApplicationDbContext context,
-        IUserRepository users,
-        IRestaurantRepository restaurants,
-        IReviewRepository reviews)
-    {
-        _context = context;
-        Users = users;
-        Restaurants = restaurants;
-        Reviews = reviews;
-    }
+    public IUserRepository Users { get; } = users;
+    public IRestaurantRepository Restaurants { get; } = restaurants;
+    public IReviewRepository Reviews { get; } = reviews;
 
     public async Task<int> SaveChangesAsync()
     {
-        return await _context.SaveChangesAsync();
+        return await context.SaveChangesAsync();
     }
 
     public async Task BeginTransactionAsync()
     {
-        _transaction = await _context.Database.BeginTransactionAsync();
+        _transaction = await context.Database.BeginTransactionAsync();
     }
 
     public async Task CommitTransactionAsync()
@@ -58,6 +50,6 @@ public class UnitOfWork : IUnitOfWork
     public void Dispose()
     {
         _transaction?.Dispose();
-        _context.Dispose();
+        context.Dispose();
     }
 }

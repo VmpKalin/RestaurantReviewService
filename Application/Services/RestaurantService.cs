@@ -6,24 +6,15 @@ using ToptalFinialSolution.Domain.Interfaces;
 
 namespace ToptalFinialSolution.Application.Services;
 
-public class RestaurantService : IRestaurantService
+public class RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodingService) : IRestaurantService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IGeocodingService _geocodingService;
-
-    public RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodingService)
-    {
-        _unitOfWork = unitOfWork;
-        _geocodingService = geocodingService;
-    }
-
     public async Task<PagedResult<RestaurantDto>> GetRestaurantsAsync(RestaurantListQuery query)
     {
         // Validate pagination
         if (query.Page < 1) query.Page = 1;
         if (query.PageSize < 1 || query.PageSize > 100) query.PageSize = 10;
 
-        var (restaurants, totalCount) = await _unitOfWork.Restaurants.GetPagedAsync(
+        var (restaurants, totalCount) = await unitOfWork.Restaurants.GetPagedAsync(
             query.Page,
             query.PageSize,
             query.TitleFilter,
@@ -58,7 +49,7 @@ public class RestaurantService : IRestaurantService
 
     public async Task<RestaurantDto?> GetRestaurantByIdAsync(Guid id)
     {
-        var restaurant = await _unitOfWork.Restaurants.GetByIdWithReviewsAsync(id);
+        var restaurant = await unitOfWork.Restaurants.GetByIdWithReviewsAsync(id);
         if (restaurant == null) return null;
 
         return new RestaurantDto
@@ -80,7 +71,7 @@ public class RestaurantService : IRestaurantService
     public async Task<RestaurantDto> CreateRestaurantAsync(CreateRestaurantRequest request, Guid ownerId)
     {
         // Verify owner exists and is of type Owner
-        var owner = await _unitOfWork.Users.GetByIdAsync(ownerId);
+        var owner = await unitOfWork.Users.GetByIdAsync(ownerId);
         if (owner == null || owner.UserType != UserType.Owner)
         {
             throw new UnauthorizedAccessException("Only owners can create restaurants");
@@ -96,7 +87,7 @@ public class RestaurantService : IRestaurantService
         }
         else if (!string.IsNullOrWhiteSpace(request.Address))
         {
-            var coordinates = await _geocodingService.GeocodeAddressAsync(request.Address);
+            var coordinates = await geocodingService.GeocodeAddressAsync(request.Address);
             if (!coordinates.HasValue)
             {
                 throw new InvalidOperationException("Unable to geocode the provided address");
@@ -122,8 +113,8 @@ public class RestaurantService : IRestaurantService
         };
         restaurant.SetCoordinates(latitude, longitude);
 
-        await _unitOfWork.Restaurants.AddAsync(restaurant);
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.Restaurants.AddAsync(restaurant);
+        await unitOfWork.SaveChangesAsync();
 
         return new RestaurantDto
         {
@@ -143,7 +134,7 @@ public class RestaurantService : IRestaurantService
 
     public async Task<RestaurantDto> UpdateRestaurantAsync(Guid id, UpdateRestaurantRequest request, Guid ownerId)
     {
-        var restaurant = await _unitOfWork.Restaurants.GetByIdAsync(id);
+        var restaurant = await unitOfWork.Restaurants.GetByIdAsync(id);
         if (restaurant == null)
         {
             throw new KeyNotFoundException("Restaurant not found");
@@ -178,7 +169,7 @@ public class RestaurantService : IRestaurantService
         }
         else if (!string.IsNullOrWhiteSpace(request.Address))
         {
-            var coordinates = await _geocodingService.GeocodeAddressAsync(request.Address);
+            var coordinates = await geocodingService.GeocodeAddressAsync(request.Address);
             if (!coordinates.HasValue)
             {
                 throw new InvalidOperationException("Unable to geocode the provided address");
@@ -188,10 +179,10 @@ public class RestaurantService : IRestaurantService
 
         restaurant.UpdatedAt = DateTime.UtcNow;
 
-        await _unitOfWork.Restaurants.UpdateAsync(restaurant);
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.Restaurants.UpdateAsync(restaurant);
+        await unitOfWork.SaveChangesAsync();
 
-        var owner = await _unitOfWork.Users.GetByIdAsync(ownerId);
+        var owner = await unitOfWork.Users.GetByIdAsync(ownerId);
 
         return new RestaurantDto
         {
@@ -211,7 +202,7 @@ public class RestaurantService : IRestaurantService
 
     public async Task DeleteRestaurantAsync(Guid id, Guid ownerId)
     {
-        var restaurant = await _unitOfWork.Restaurants.GetByIdAsync(id);
+        var restaurant = await unitOfWork.Restaurants.GetByIdAsync(id);
         if (restaurant == null)
         {
             throw new KeyNotFoundException("Restaurant not found");
@@ -223,7 +214,7 @@ public class RestaurantService : IRestaurantService
             throw new UnauthorizedAccessException("You can only delete your own restaurants");
         }
 
-        await _unitOfWork.Restaurants.DeleteAsync(restaurant);
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.Restaurants.DeleteAsync(restaurant);
+        await unitOfWork.SaveChangesAsync();
     }
 }

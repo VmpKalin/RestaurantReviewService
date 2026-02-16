@@ -6,12 +6,8 @@ using ToptalFinialSolution.Infrastructure.Data;
 
 namespace ToptalFinialSolution.Infrastructure.Repositories;
 
-public class RestaurantRepository : Repository<Restaurant>, IRestaurantRepository
+public class RestaurantRepository(ApplicationDbContext context) : Repository<Restaurant>(context), IRestaurantRepository
 {
-    public RestaurantRepository(ApplicationDbContext context) : base(context)
-    {
-    }
-
     public async Task<(IEnumerable<Restaurant> Restaurants, int TotalCount)> GetPagedAsync(
         int page, 
         int pageSize, 

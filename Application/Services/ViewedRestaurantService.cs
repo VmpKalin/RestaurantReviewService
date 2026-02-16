@@ -7,53 +7,43 @@ using ToptalFinialSolution.Infrastructure.Data;
 
 namespace ToptalFinialSolution.Application.Services;
 
-public class ViewedRestaurantService : IViewedRestaurantService
+public class ViewedRestaurantService(
+    IUnitOfWork unitOfWork,
+    IViewedRestaurantRedisRepository redisRepository,
+    ApplicationDbContext context)
+    : IViewedRestaurantService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IViewedRestaurantRedisRepository _redisRepository;
-    private readonly ApplicationDbContext _context;
-
-    public ViewedRestaurantService(
-        IUnitOfWork unitOfWork, 
-        IViewedRestaurantRedisRepository redisRepository,
-        ApplicationDbContext context)
-    {
-        _unitOfWork = unitOfWork;
-        _redisRepository = redisRepository;
-        _context = context;
-    }
-
     public async Task RecordViewAsync(Guid userId, Guid restaurantId)
     {
         // Verify user is a reviewer
-        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        var user = await unitOfWork.Users.GetByIdAsync(userId);
         if (user == null || user.UserType != UserType.Reviewer)
         {
             throw new UnauthorizedAccessException("Only reviewers can record restaurant views");
         }
 
         // Verify restaurant exists
-        var restaurant = await _unitOfWork.Restaurants.GetByIdAsync(restaurantId);
+        var restaurant = await unitOfWork.Restaurants.GetByIdAsync(restaurantId);
         if (restaurant == null)
         {
             throw new KeyNotFoundException("Restaurant not found");
         }
 
         // Record view in Redis (no DB persistence needed)
-        await _redisRepository.RecordViewAsync(userId, restaurantId);
+        await redisRepository.RecordViewAsync(userId, restaurantId);
     }
 
     public async Task<IEnumerable<RestaurantDto>> GetRecentlyViewedAsync(Guid userId)
     {
         // Verify user is a reviewer
-        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        var user = await unitOfWork.Users.GetByIdAsync(userId);
         if (user == null || user.UserType != UserType.Reviewer)
         {
             throw new UnauthorizedAccessException("Only reviewers can view recently viewed restaurants");
         }
 
         // Get restaurant IDs from Redis
-        var restaurantIds = await _redisRepository.GetRecentlyViewedRestaurantIdsAsync(userId, 10);
+        var restaurantIds = await redisRepository.GetRecentlyViewedRestaurantIdsAsync(userId, 10);
         
         if (!restaurantIds.Any())
         {
@@ -61,7 +51,7 @@ public class ViewedRestaurantService : IViewedRestaurantService
         }
 
         // Fetch restaurant details from database
-        var restaurants = await _context.Restaurants
+        var restaurants = await context.Restaurants
             .Where(r => restaurantIds.Contains(r.Id))
             .Include(r => r.Owner)
             .ToListAsync();

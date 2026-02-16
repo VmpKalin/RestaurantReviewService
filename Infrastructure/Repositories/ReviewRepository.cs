@@ -5,12 +5,8 @@ using ToptalFinialSolution.Infrastructure.Data;
 
 namespace ToptalFinialSolution.Infrastructure.Repositories;
 
-public class ReviewRepository : Repository<Review>, IReviewRepository
+public class ReviewRepository(ApplicationDbContext context) : Repository<Review>(context), IReviewRepository
 {
-    public ReviewRepository(ApplicationDbContext context) : base(context)
-    {
-    }
-
     public async Task<(IEnumerable<Review> Reviews, int TotalCount)> GetPagedAsync(
         int page, 
         int pageSize, 

@@ -10,21 +10,12 @@ using ToptalFinialSolution.Domain.Interfaces;
 
 namespace ToptalFinialSolution.Application.Services;
 
-public class AuthService : IAuthService
+public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) : IAuthService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IConfiguration _configuration;
-
-    public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration)
-    {
-        _unitOfWork = unitOfWork;
-        _configuration = configuration;
-    }
-
     public async Task<AuthResponse> SignUpAsync(SignUpRequest request)
     {
         // Check if user already exists
-        var existingUser = await _unitOfWork.Users.GetByEmailAsync(request.Email);
+        var existingUser = await unitOfWork.Users.GetByEmailAsync(request.Email);
         if (existingUser != null)
         {
             throw new InvalidOperationException("User with this email already exists");
@@ -44,8 +35,8 @@ public class AuthService : IAuthService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _unitOfWork.Users.AddAsync(user);
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.Users.AddAsync(user);
+        await unitOfWork.SaveChangesAsync();
 
         // Generate token
         var token = GenerateJwtToken(user.Id, user.Email, user.UserType.ToString());
@@ -65,7 +56,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
+        var user = await unitOfWork.Users.GetByEmailAsync(request.Email);
         if (user == null)
         {
             throw new UnauthorizedAccessException("Invalid email or password");
@@ -93,9 +84,9 @@ public class AuthService : IAuthService
 
     public string GenerateJwtToken(Guid userId, string email, string userType)
     {
-        var jwtKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
-        var jwtIssuer = _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
-        var jwtAudience = _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
+        var jwtKey = configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
+        var jwtIssuer = configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
+        var jwtAudience = configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);

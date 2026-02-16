@@ -8,15 +8,8 @@ namespace ToptalFinialSolution.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(IAuthService authService) : ControllerBase
 {
-    private readonly IAuthService _authService;
-
-    public AuthController(IAuthService authService)
-    {
-        _authService = authService;
-    }
-
     /// <summary>
     /// Sign up a new user
     /// </summary>
@@ -26,7 +19,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var response = await _authService.SignUpAsync(request);
+            var response = await authService.SignUpAsync(request);
             return Ok(response);
         }
         catch (InvalidOperationException ex)
@@ -44,7 +37,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var response = await _authService.LoginAsync(request);
+            var response = await authService.LoginAsync(request);
             return Ok(response);
         }
         catch (UnauthorizedAccessException ex)

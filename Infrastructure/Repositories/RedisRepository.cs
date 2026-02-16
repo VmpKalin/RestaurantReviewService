@@ -6,24 +6,17 @@ namespace ToptalFinialSolution.Infrastructure.Repositories;
 /// <summary>
 /// Base Redis repository implementation using Sorted Sets for time-based ordering
 /// </summary>
-public abstract class RedisRepository<TKey, TValue> : IRedisRepository<TKey, TValue>
+public abstract class RedisRepository<TKey, TValue>(
+    IConnectionMultiplexer redis,
+    string keyPrefix,
+    int maxEntries = 100,
+    int expirationDays = 90)
+    : IRedisRepository<TKey, TValue>
 {
-    protected readonly IDatabase _db;
-    protected readonly string _keyPrefix;
-    protected readonly int _maxEntries;
-    protected readonly TimeSpan _expiration;
-
-    protected RedisRepository(
-        IConnectionMultiplexer redis,
-        string keyPrefix,
-        int maxEntries = 100,
-        int expirationDays = 90)
-    {
-        _db = redis.GetDatabase();
-        _keyPrefix = keyPrefix;
-        _maxEntries = maxEntries;
-        _expiration = TimeSpan.FromDays(expirationDays);
-    }
+    protected readonly IDatabase _db = redis.GetDatabase();
+    protected readonly string _keyPrefix = keyPrefix;
+    protected readonly int _maxEntries = maxEntries;
+    protected readonly TimeSpan _expiration = TimeSpan.FromDays(expirationDays);
 
     public virtual async Task AddAsync(TKey key, TValue value)
     {

@@ -10,19 +10,11 @@ namespace ToptalFinialSolution.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class RestaurantsController : ControllerBase
+public class RestaurantsController(
+    IRestaurantService restaurantService,
+    IViewedRestaurantService viewedRestaurantService)
+    : ControllerBase
 {
-    private readonly IRestaurantService _restaurantService;
-    private readonly IViewedRestaurantService _viewedRestaurantService;
-
-    public RestaurantsController(
-        IRestaurantService restaurantService,
-        IViewedRestaurantService viewedRestaurantService)
-    {
-        _restaurantService = restaurantService;
-        _viewedRestaurantService = viewedRestaurantService;
-    }
-
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -36,7 +28,7 @@ public class RestaurantsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<PagedResult<RestaurantDto>>> GetRestaurants([FromQuery] RestaurantListQuery query)
     {
-        var result = await _restaurantService.GetRestaurantsAsync(query);
+        var result = await restaurantService.GetRestaurantsAsync(query);
         return Ok(result);
     }
 
@@ -48,7 +40,7 @@ public class RestaurantsController : ControllerBase
     [TrackRestaurantView]
     public async Task<ActionResult<RestaurantDto>> GetRestaurant(Guid id)
     {
-        var restaurant = await _restaurantService.GetRestaurantByIdAsync(id);
+        var restaurant = await restaurantService.GetRestaurantByIdAsync(id);
         if (restaurant == null)
         {
             return NotFound(new { message = "Restaurant not found" });
@@ -67,7 +59,7 @@ public class RestaurantsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var restaurant = await _restaurantService.CreateRestaurantAsync(request, userId);
+            var restaurant = await restaurantService.CreateRestaurantAsync(request, userId);
             return CreatedAtAction(nameof(GetRestaurant), new { id = restaurant.Id }, restaurant);
         }
         catch (InvalidOperationException ex)
@@ -90,7 +82,7 @@ public class RestaurantsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var restaurant = await _restaurantService.UpdateRestaurantAsync(id, request, userId);
+            var restaurant = await restaurantService.UpdateRestaurantAsync(id, request, userId);
             return Ok(restaurant);
         }
         catch (KeyNotFoundException ex)
@@ -117,7 +109,7 @@ public class RestaurantsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            await _restaurantService.DeleteRestaurantAsync(id, userId);
+            await restaurantService.DeleteRestaurantAsync(id, userId);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
@@ -140,7 +132,7 @@ public class RestaurantsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var restaurants = await _viewedRestaurantService.GetRecentlyViewedAsync(userId);
+            var restaurants = await viewedRestaurantService.GetRecentlyViewedAsync(userId);
             return Ok(restaurants);
         }
         catch (UnauthorizedAccessException ex)
