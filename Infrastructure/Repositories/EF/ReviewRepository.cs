@@ -13,7 +13,7 @@ public class ReviewRepository(ApplicationDbContext context) : Repository<Review>
         Guid? restaurantId = null,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbSet
+        var query = DbSet
             .Include(r => r.Restaurant)
             .Include(r => r.Reviewer)
             .AsQueryable();
@@ -36,12 +36,12 @@ public class ReviewRepository(ApplicationDbContext context) : Repository<Review>
 
     public async Task<double> GetAverageRatingByRestaurantAsync(Guid restaurantId, CancellationToken cancellationToken = default)
     {
-        var reviews = await _dbSet.Where(r => r.RestaurantId == restaurantId).ToListAsync(cancellationToken);
+        var reviews = await DbSet.Where(r => r.RestaurantId == restaurantId).ToListAsync(cancellationToken);
         return reviews.Count is > 0 ? reviews.Average(r => r.Rating) : 0;
     }
 
     public async Task<int> GetReviewCountByRestaurantAsync(Guid restaurantId, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.CountAsync(r => r.RestaurantId == restaurantId, cancellationToken);
+        return await DbSet.CountAsync(r => r.RestaurantId == restaurantId, cancellationToken);
     }
 }

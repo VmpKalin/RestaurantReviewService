@@ -17,7 +17,7 @@ public class RestaurantRepository(ApplicationDbContext context) : Repository<Res
         double? radiusKm = null,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbSet.Include(r => r.Owner).AsQueryable();
+        var query = DbSet.Include(r => r.Owner).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(titleFilter))
         {
@@ -52,7 +52,7 @@ public class RestaurantRepository(ApplicationDbContext context) : Repository<Res
 
     public async Task<Restaurant?> GetByIdWithReviewsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
+        return await DbSet
             .Include(r => r.Owner)
             .Include(r => r.Reviews)
             .ThenInclude(rev => rev.Reviewer)

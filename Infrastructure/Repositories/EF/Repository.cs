@@ -8,51 +8,50 @@ namespace ToptalFinialSolution.Infrastructure.Repositories;
 public class Repository<T>(ApplicationDbContext context) : IRepository<T>
     where T : class
 {
-    protected readonly ApplicationDbContext _context = context;
-    protected readonly DbSet<T> _dbSet = context.Set<T>();
+    protected readonly DbSet<T> DbSet = context.Set<T>();
 
     public virtual async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.FindAsync([id], cancellationToken);
+        return await DbSet.FindAsync([id], cancellationToken);
     }
 
     public virtual async Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.ToListAsync(cancellationToken);
+        return await DbSet.ToListAsync(cancellationToken);
     }
 
     public virtual async Task<IReadOnlyList<T>> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.Where(predicate).ToListAsync(cancellationToken);
+        return await DbSet.Where(predicate).ToListAsync(cancellationToken);
     }
 
     public virtual async Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
     {
-        await _dbSet.AddAsync(entity, cancellationToken);
+        await DbSet.AddAsync(entity, cancellationToken);
         return entity;
     }
 
     public virtual Task UpdateAsync(T entity)
     {
-        _dbSet.Update(entity);
+        DbSet.Update(entity);
         return Task.CompletedTask;
     }
 
     public virtual Task DeleteAsync(T entity)
     {
-        _dbSet.Remove(entity);
+        DbSet.Remove(entity);
         return Task.CompletedTask;
     }
 
     public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
         return predicate is null
-            ? await _dbSet.CountAsync(cancellationToken)
-            : await _dbSet.CountAsync(predicate, cancellationToken);
+            ? await DbSet.CountAsync(cancellationToken)
+            : await DbSet.CountAsync(predicate, cancellationToken);
     }
 
     public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.AnyAsync(predicate, cancellationToken);
+        return await DbSet.AnyAsync(predicate, cancellationToken);
     }
 }
