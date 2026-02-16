@@ -9,9 +9,9 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public UserType UserType { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
+
     // Navigation properties
     public ICollection<Restaurant> Restaurants { get; set; } = new List<Restaurant>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();

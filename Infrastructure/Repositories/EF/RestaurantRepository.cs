@@ -8,17 +8,17 @@ namespace ToptalFinialSolution.Infrastructure.Repositories;
 
 public class RestaurantRepository(ApplicationDbContext context) : Repository<Restaurant>(context), IRestaurantRepository
 {
-    public async Task<(IEnumerable<Restaurant> Restaurants, int TotalCount)> GetPagedAsync(
-        int page, 
-        int pageSize, 
-        string? titleFilter = null, 
-        double? latitude = null, 
-        double? longitude = null, 
-        double? radiusKm = null)
+    public async Task<(IReadOnlyList<Restaurant> Restaurants, int TotalCount)> GetPagedAsync(
+        int page,
+        int pageSize,
+        string? titleFilter = null,
+        double? latitude = null,
+        double? longitude = null,
+        double? radiusKm = null,
+        CancellationToken cancellationToken = default)
     {
         var query = _dbSet.Include(r => r.Owner).AsQueryable();
 
-        // Apply title filter
         if (!string.IsNullOrWhiteSpace(titleFilter))
         {
             query = query.Where(r => r.Title.Contains(titleFilter));
@@ -26,7 +26,6 @@ public class RestaurantRepository(ApplicationDbContext context) : Repository<Res
 
         Point? searchPoint = null;
 
-        // Apply location filter using PostGIS ST_DWithin (uses GIST index)
         if (latitude.HasValue && longitude.HasValue && radiusKm.HasValue)
         {
             var radiusMeters = radiusKm.Value * 1000;
@@ -37,27 +36,26 @@ public class RestaurantRepository(ApplicationDbContext context) : Repository<Res
                 r.Location.IsWithinDistance(searchPoint, radiusMeters));
         }
 
-        var totalCount = await query.CountAsync();
+        var totalCount = await query.CountAsync(cancellationToken);
 
-        // Order by distance when searching by location, otherwise by creation date
-        var orderedQuery = searchPoint != null
+        var orderedQuery = searchPoint is not null
             ? query.OrderBy(r => r.Location!.Distance(searchPoint))
             : query.OrderByDescending(r => r.CreatedAt);
 
         var restaurants = await orderedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return (restaurants, totalCount);
     }
 
-    public async Task<Restaurant?> GetByIdWithReviewsAsync(Guid id)
+    public async Task<Restaurant?> GetByIdWithReviewsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbSet
             .Include(r => r.Owner)
             .Include(r => r.Reviews)
             .ThenInclude(rev => rev.Reviewer)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 }

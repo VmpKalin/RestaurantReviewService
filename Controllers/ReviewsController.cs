@@ -22,9 +22,9 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<PagedResult<ReviewDto>>> GetReviews([FromQuery] ReviewListQuery query)
+    public async Task<ActionResult<PagedResult<ReviewDto>>> GetReviews([FromQuery] ReviewListQuery query, CancellationToken cancellationToken)
     {
-        var result = await reviewService.GetReviewsAsync(query);
+        var result = await reviewService.GetReviewsAsync(query, cancellationToken);
         return Ok(result);
     }
 
@@ -33,10 +33,10 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
     /// </summary>
     [HttpPost]
     [Authorize(Roles = "Reviewer")]
-    public async Task<ActionResult<ReviewDto>> CreateReview([FromBody] CreateReviewRequest request)
+    public async Task<ActionResult<ReviewDto>> CreateReview([FromBody] CreateReviewRequest request, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        var review = await reviewService.CreateReviewAsync(request, userId);
+        var review = await reviewService.CreateReviewAsync(request, userId, cancellationToken);
         return CreatedAtAction(nameof(GetReviews), new { restaurantId = review.RestaurantId }, review);
     }
 }

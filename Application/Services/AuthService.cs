@@ -12,19 +12,16 @@ namespace ToptalFinialSolution.Application.Services;
 
 public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) : IAuthService
 {
-    public async Task<AuthResponse> SignUpAsync(SignUpRequest request)
+    public async Task<AuthResponse> SignUpAsync(SignUpRequest request, CancellationToken cancellationToken = default)
     {
-        // Check if user already exists
-        var existingUser = await unitOfWork.Users.GetByEmailAsync(request.Email);
-        if (existingUser != null)
+        var existingUser = await unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
+        if (existingUser is not null)
         {
             throw new InvalidOperationException("User with this email already exists");
         }
 
-        // Hash password
         var passwordHash = HashPassword(request.Password);
 
-        // Create user
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -32,13 +29,12 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) :
             PasswordHash = passwordHash,
             FullName = request.FullName,
             UserType = request.UserType,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
-        await unitOfWork.Users.AddAsync(user);
-        await unitOfWork.SaveChangesAsync();
+        await unitOfWork.Users.AddAsync(user, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Generate token
         var token = GenerateJwtToken(user.Id, user.Email, user.UserType.ToString());
 
         return new AuthResponse
@@ -54,10 +50,10 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) :
         };
     }
 
-    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
-        var user = await unitOfWork.Users.GetByEmailAsync(request.Email);
-        if (user == null)
+        var user = await unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
+        if (user is null)
         {
             throw new UnauthorizedAccessException("Invalid email or password");
         }
@@ -103,21 +99,20 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) :
             issuer: jwtIssuer,
             audience: jwtAudience,
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
+            expires: DateTimeOffset.UtcNow.AddDays(7).UtcDateTime,
             signingCredentials: credentials
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private string HashPassword(string password)
+    private static string HashPassword(string password)
     {
-        using var sha256 = SHA256.Create();
-        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+        var hashedBytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
         return Convert.ToBase64String(hashedBytes);
     }
 
-    private bool VerifyPassword(string password, string passwordHash)
+    private static bool VerifyPassword(string password, string passwordHash)
     {
         var hash = HashPassword(password);
         return hash == passwordHash;

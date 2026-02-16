@@ -5,6 +5,6 @@ namespace ToptalFinialSolution.Application.DTOs;
 public record LoginRequest
 {
     [EmailAddress]
-    public required string Email { get; set; }
-    public required string Password { get; set; }
+    public required string Email { get; init; }
+    public required string Password { get; init; }
 }

@@ -17,31 +17,31 @@ public class UnitOfWork(
     public IRestaurantRepository Restaurants { get; } = restaurants;
     public IReviewRepository Reviews { get; } = reviews;
 
-    public async Task<int> SaveChangesAsync()
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await context.SaveChangesAsync();
+        return await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task BeginTransactionAsync()
+    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
-        _transaction = await context.Database.BeginTransactionAsync();
+        _transaction = await context.Database.BeginTransactionAsync(cancellationToken);
     }
 
-    public async Task CommitTransactionAsync()
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
-        if (_transaction != null)
+        if (_transaction is not null)
         {
-            await _transaction.CommitAsync();
+            await _transaction.CommitAsync(cancellationToken);
             await _transaction.DisposeAsync();
             _transaction = null;
         }
     }
 
-    public async Task RollbackTransactionAsync()
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
-        if (_transaction != null)
+        if (_transaction is not null)
         {
-            await _transaction.RollbackAsync();
+            await _transaction.RollbackAsync(cancellationToken);
             await _transaction.DisposeAsync();
             _transaction = null;
         }

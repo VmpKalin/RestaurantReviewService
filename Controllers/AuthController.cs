@@ -15,9 +15,9 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// </summary>
     [HttpPost("signup")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthResponse>> SignUp([FromBody] SignUpRequest request)
+    public async Task<ActionResult<AuthResponse>> SignUp([FromBody] SignUpRequest request, CancellationToken cancellationToken)
     {
-        var response = await authService.SignUpAsync(request);
+        var response = await authService.SignUpAsync(request, cancellationToken);
         return Ok(response);
     }
 
@@ -26,9 +26,9 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        var response = await authService.LoginAsync(request);
+        var response = await authService.LoginAsync(request, cancellationToken);
         return Ok(response);
     }
 
@@ -43,11 +43,6 @@ public class AuthController(IAuthService authService) : ControllerBase
         var email = User.FindFirst(ClaimTypes.Email)?.Value;
         var userType = User.FindFirst(ClaimTypes.Role)?.Value;
 
-        return Ok(new
-        {
-            userId,
-            email,
-            userType
-        });
+        return Ok(new { userId, email, userType });
     }
 }

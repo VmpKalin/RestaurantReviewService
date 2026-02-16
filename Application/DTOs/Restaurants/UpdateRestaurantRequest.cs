@@ -6,11 +6,11 @@ public record UpdateRestaurantRequest
 {
     [MinLength(1)]
     [MaxLength(200)]
-    public string? Title { get; set; }
-    public string? PreviewImage { get; set; }
+    public string? Title { get; init; }
+    public string? PreviewImage { get; init; }
     [MinLength(5)]
-    public string? Description { get; set; }
-    public double? Latitude { get; set; }
-    public double? Longitude { get; set; }
-    public string? Address { get; set; }
+    public string? Description { get; init; }
+    public double? Latitude { get; init; }
+    public double? Longitude { get; init; }
+    public string? Address { get; init; }
 }

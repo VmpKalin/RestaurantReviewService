@@ -9,16 +9,16 @@ namespace ToptalFinialSolution.Application.Services;
 
 public class ReviewService(IUnitOfWork unitOfWork) : IReviewService
 {
-    public async Task<PagedResult<ReviewDto>> GetReviewsAsync(ReviewListQuery query)
+    public async Task<PagedResult<ReviewDto>> GetReviewsAsync(ReviewListQuery query, CancellationToken cancellationToken = default)
     {
-        // Validate pagination
-        if (query.Page < 1) query.Page = 1;
-        if (query.PageSize < 1 || query.PageSize > 100) query.PageSize = 10;
+        var page = query.Page is < 1 ? 1 : query.Page;
+        var pageSize = query.PageSize is < 1 or > 100 ? 10 : query.PageSize;
 
         var (reviews, totalCount) = await unitOfWork.Reviews.GetPagedAsync(
-            query.Page,
-            query.PageSize,
-            query.RestaurantId
+            page,
+            pageSize,
+            query.RestaurantId,
+            cancellationToken
         );
 
         var reviewDtos = reviews.Select(r => new ReviewDto
@@ -31,43 +31,40 @@ public class ReviewService(IUnitOfWork unitOfWork) : IReviewService
             ReviewerId = r.ReviewerId,
             ReviewerName = r.Reviewer.FullName,
             CreatedAt = r.CreatedAt
-        });
+        }).ToList();
 
         return new PagedResult<ReviewDto>
         {
             Items = reviewDtos,
-            Page = query.Page,
-            PageSize = query.PageSize,
+            Page = page,
+            PageSize = pageSize,
             TotalCount = totalCount
         };
     }
 
-    public async Task<ReviewDto> CreateReviewAsync(CreateReviewRequest request, Guid reviewerId)
+    public async Task<ReviewDto> CreateReviewAsync(CreateReviewRequest request, Guid reviewerId, CancellationToken cancellationToken = default)
     {
-        // Verify reviewer exists and is of type Reviewer
-        var reviewer = await unitOfWork.Users.GetByIdAsync(reviewerId);
-        if (reviewer == null || reviewer.UserType != UserType.Reviewer)
+        var reviewer = await unitOfWork.Users.GetByIdAsync(reviewerId, cancellationToken);
+        if (reviewer is not { UserType: UserType.Reviewer })
         {
             throw new ForbiddenException("Only reviewers can create reviews");
         }
 
-        // Verify restaurant exists
-        var restaurant = await unitOfWork.Restaurants.GetByIdAsync(request.RestaurantId);
-        if (restaurant == null)
+        var restaurant = await unitOfWork.Restaurants.GetByIdAsync(request.RestaurantId, cancellationToken);
+        if (restaurant is null)
         {
             throw new KeyNotFoundException("Restaurant not found");
         }
 
-        // Check if user already reviewed this restaurant
         var existingReview = await unitOfWork.Reviews.FindAsync(
-            r => r.RestaurantId == request.RestaurantId && r.ReviewerId == reviewerId
+            r => r.RestaurantId == request.RestaurantId && r.ReviewerId == reviewerId,
+            cancellationToken
         );
-        if (existingReview.Any())
+        if (existingReview.Count is > 0)
         {
             throw new InvalidOperationException("You have already reviewed this restaurant");
         }
 
-        // Create review
         var review = new Review
         {
             Id = Guid.NewGuid(),
@@ -75,21 +72,19 @@ public class ReviewService(IUnitOfWork unitOfWork) : IReviewService
             Rating = request.Rating,
             RestaurantId = request.RestaurantId,
             ReviewerId = reviewerId,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
-        await unitOfWork.Reviews.AddAsync(review);
+        await unitOfWork.Reviews.AddAsync(review, cancellationToken);
 
-        // Update restaurant average rating and review count
-        var averageRating = await unitOfWork.Reviews.GetAverageRatingByRestaurantAsync(request.RestaurantId);
-        var reviewCount = await unitOfWork.Reviews.GetReviewCountByRestaurantAsync(request.RestaurantId);
-        
-        // Add 1 to count since we're adding a new review
+        var averageRating = await unitOfWork.Reviews.GetAverageRatingByRestaurantAsync(request.RestaurantId, cancellationToken);
+        var reviewCount = await unitOfWork.Reviews.GetReviewCountByRestaurantAsync(request.RestaurantId, cancellationToken);
+
         restaurant.AverageRating = (averageRating * reviewCount + request.Rating) / (reviewCount + 1);
         restaurant.ReviewCount = reviewCount + 1;
-        
+
         await unitOfWork.Restaurants.UpdateAsync(restaurant);
-        await unitOfWork.SaveChangesAsync();
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new ReviewDto
         {

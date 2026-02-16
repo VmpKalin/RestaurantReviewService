@@ -6,10 +6,10 @@ namespace ToptalFinialSolution.Application.DTOs;
 public record SignUpRequest
 {
     [EmailAddress]
-    public required string Email { get; set; }
+    public required string Email { get; init; }
     [MinLength(8)]
-    public required string Password { get; set; }
+    public required string Password { get; init; }
     [MinLength(2)]
-    public required string FullName { get; set; }
-    public required UserType UserType { get; set; }
+    public required string FullName { get; init; }
+    public required UserType UserType { get; init; }
 }

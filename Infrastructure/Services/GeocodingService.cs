@@ -6,47 +6,47 @@ namespace ToptalFinialSolution.Infrastructure.Services;
 
 public class GeocodingService(HttpClient httpClient) : IGeocodingService
 {
-    public async Task<(double Latitude, double Longitude)?> GeocodeAddressAsync(string address)
+    public async Task<(double Latitude, double Longitude)?> GeocodeAddressAsync(string address, CancellationToken cancellationToken = default)
     {
         try
         {
-            // Using Nominatim (OpenStreetMap) for geocoding
-            // In production, consider using Google Maps API, Azure Maps, or other paid services
             var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(address)}&format=json&limit=1";
-            
+
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "RestaurantReviewAPI/1.0");
-            
-            var response = await httpClient.GetAsync(url);
-            
+
+            var response = await httpClient.GetAsync(url, cancellationToken);
+
             if (!response.IsSuccessStatusCode)
             {
                 return null;
             }
 
-            var content = await response.Content.ReadAsStringAsync();
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
             var results = JsonSerializer.Deserialize<List<NominatimResult>>(content);
 
-            if (results == null || results.Count == 0)
+            if (results is not { Count: > 0 })
             {
                 return null;
             }
 
             var result = results[0];
             return (
-                double.Parse(result.lat, CultureInfo.InvariantCulture),
-                double.Parse(result.lon, CultureInfo.InvariantCulture)
+                double.Parse(result.Lat, CultureInfo.InvariantCulture),
+                double.Parse(result.Lon, CultureInfo.InvariantCulture)
             );
         }
-        catch
+        catch (Exception) when (true)
         {
             return null;
         }
     }
 
-    private class NominatimResult
+    private record NominatimResult
     {
-        public string lat { get; set; } = string.Empty;
-        public string lon { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonPropertyName("lat")]
+        public required string Lat { get; init; }
+        [System.Text.Json.Serialization.JsonPropertyName("lon")]
+        public required string Lon { get; init; }
     }
 }

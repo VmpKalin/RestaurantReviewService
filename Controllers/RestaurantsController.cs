@@ -26,9 +26,9 @@ public class RestaurantsController(
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<PagedResult<RestaurantDto>>> GetRestaurants([FromQuery] RestaurantListQuery query)
+    public async Task<ActionResult<PagedResult<RestaurantDto>>> GetRestaurants([FromQuery] RestaurantListQuery query, CancellationToken cancellationToken)
     {
-        var result = await restaurantService.GetRestaurantsAsync(query);
+        var result = await restaurantService.GetRestaurantsAsync(query, cancellationToken);
         return Ok(result);
     }
 
@@ -38,10 +38,10 @@ public class RestaurantsController(
     [HttpGet("{id}")]
     [AllowAnonymous]
     [TrackRestaurantView]
-    public async Task<ActionResult<RestaurantDto>> GetRestaurant(Guid id)
+    public async Task<ActionResult<RestaurantDto>> GetRestaurant(Guid id, CancellationToken cancellationToken)
     {
-        var restaurant = await restaurantService.GetRestaurantByIdAsync(id);
-        if (restaurant == null)
+        var restaurant = await restaurantService.GetRestaurantByIdAsync(id, cancellationToken);
+        if (restaurant is null)
         {
             return NotFound(new { message = "Restaurant not found" });
         }
@@ -54,10 +54,10 @@ public class RestaurantsController(
     /// </summary>
     [HttpPost]
     [Authorize(Roles = "Owner")]
-    public async Task<ActionResult<RestaurantDto>> CreateRestaurant([FromBody] CreateRestaurantRequest request)
+    public async Task<ActionResult<RestaurantDto>> CreateRestaurant([FromBody] CreateRestaurantRequest request, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        var restaurant = await restaurantService.CreateRestaurantAsync(request, userId);
+        var restaurant = await restaurantService.CreateRestaurantAsync(request, userId, cancellationToken);
         return CreatedAtAction(nameof(GetRestaurant), new { id = restaurant.Id }, restaurant);
     }
 
@@ -66,10 +66,10 @@ public class RestaurantsController(
     /// </summary>
     [HttpPut("{id}")]
     [Authorize(Roles = "Owner")]
-    public async Task<ActionResult<RestaurantDto>> UpdateRestaurant(Guid id, [FromBody] UpdateRestaurantRequest request)
+    public async Task<ActionResult<RestaurantDto>> UpdateRestaurant(Guid id, [FromBody] UpdateRestaurantRequest request, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        var restaurant = await restaurantService.UpdateRestaurantAsync(id, request, userId);
+        var restaurant = await restaurantService.UpdateRestaurantAsync(id, request, userId, cancellationToken);
         return Ok(restaurant);
     }
 
@@ -78,10 +78,10 @@ public class RestaurantsController(
     /// </summary>
     [HttpDelete("{id}")]
     [Authorize(Roles = "Owner")]
-    public async Task<ActionResult> DeleteRestaurant(Guid id)
+    public async Task<ActionResult> DeleteRestaurant(Guid id, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        await restaurantService.DeleteRestaurantAsync(id, userId);
+        await restaurantService.DeleteRestaurantAsync(id, userId, cancellationToken);
         return NoContent();
     }
 
@@ -90,10 +90,10 @@ public class RestaurantsController(
     /// </summary>
     [HttpGet("recently-viewed")]
     [Authorize(Roles = "Reviewer")]
-    public async Task<ActionResult<IEnumerable<RestaurantDto>>> GetRecentlyViewed()
+    public async Task<ActionResult<IReadOnlyList<RestaurantDto>>> GetRecentlyViewed(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        var restaurants = await viewedRestaurantService.GetRecentlyViewedAsync(userId);
+        var restaurants = await viewedRestaurantService.GetRecentlyViewedAsync(userId, cancellationToken);
         return Ok(restaurants);
     }
 }

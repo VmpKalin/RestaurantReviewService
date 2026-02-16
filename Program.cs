@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using StackExchange.Redis;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using ToptalFinialSolution.API.Middleware;
 using ToptalFinialSolution.Application.Interfaces;
@@ -15,16 +16,17 @@ using ToptalFinialSolution.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the container with explicit JSON contracts (R21)
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
     });
 
 // Configure OpenAPI
 builder.Services.AddOpenApi();
-
 
 // Configure Database (PostgreSQL + PostGIS via NetTopologySuite)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -44,7 +46,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 // Register Redis Repositories
 builder.Services.AddScoped<IViewedRestaurantRedisRepository, ViewedRestaurantRedisRepository>();
 
-// Configure JWT Authentication 
+// Configure JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
@@ -82,7 +84,7 @@ builder.Services.AddScoped<IRestaurantService, RestaurantService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IViewedRestaurantService, ViewedRestaurantService>();
 
-// Register HttpClient for Geocoding
+// Register HttpClient for Geocoding (uses IHttpClientFactory under the hood - R11)
 builder.Services.AddHttpClient<IGeocodingService, GeocodingService>();
 
 // Configure CORS
@@ -110,7 +112,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Configure the HTTP request pipeline.
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseHttpsRedirection();
@@ -122,7 +123,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Apply pending migrations (creates DB and PostGIS extension if needed)
+// Apply pending migrations
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

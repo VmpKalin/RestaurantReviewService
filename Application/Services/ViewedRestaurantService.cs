@@ -14,68 +14,58 @@ public class ViewedRestaurantService(
     ApplicationDbContext context)
     : IViewedRestaurantService
 {
-    public async Task RecordViewAsync(Guid userId, Guid restaurantId)
+    public async Task RecordViewAsync(Guid userId, Guid restaurantId, CancellationToken cancellationToken = default)
     {
-        // Verify user is a reviewer
-        var user = await unitOfWork.Users.GetByIdAsync(userId);
-        if (user == null || user.UserType != UserType.Reviewer)
+        var user = await unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+        if (user is not { UserType: UserType.Reviewer })
         {
             throw new ForbiddenException("Only reviewers can record restaurant views");
         }
 
-        // Verify restaurant exists
-        var restaurant = await unitOfWork.Restaurants.GetByIdAsync(restaurantId);
-        if (restaurant == null)
+        var restaurant = await unitOfWork.Restaurants.GetByIdAsync(restaurantId, cancellationToken);
+        if (restaurant is null)
         {
             throw new KeyNotFoundException("Restaurant not found");
         }
 
-        // Record view in Redis (no DB persistence needed)
-        await redisRepository.RecordViewAsync(userId, restaurantId);
+        await redisRepository.RecordViewAsync(userId, restaurantId, cancellationToken);
     }
 
-    public async Task<IEnumerable<RestaurantDto>> GetRecentlyViewedAsync(Guid userId)
+    public async Task<IReadOnlyList<RestaurantDto>> GetRecentlyViewedAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        // Verify user is a reviewer
-        var user = await unitOfWork.Users.GetByIdAsync(userId);
-        if (user == null || user.UserType != UserType.Reviewer)
+        var user = await unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+        if (user is not { UserType: UserType.Reviewer })
         {
             throw new ForbiddenException("Only reviewers can view recently viewed restaurants");
         }
 
-        // Get restaurant IDs from Redis
-        var restaurantIds = await redisRepository.GetRecentlyViewedRestaurantIdsAsync(userId, 10);
-        
-        if (!restaurantIds.Any())
+        var restaurantIds = await redisRepository.GetRecentlyViewedRestaurantIdsAsync(userId, 10, cancellationToken);
+
+        if (restaurantIds.Count is 0)
         {
-            return Enumerable.Empty<RestaurantDto>();
+            return [];
         }
 
-        // Fetch restaurant details from database
         var restaurants = await context.Restaurants
             .Where(r => restaurantIds.Contains(r.Id))
             .Include(r => r.Owner)
-            .ToListAsync();
-        
-        // Maintain the order from Redis (most recent first)
-        var orderedRestaurants = restaurantIds
-            .Select(id => restaurants.FirstOrDefault(r => r.Id == id))
-            .Where(r => r != null)
-            .ToList();
+            .ToListAsync(cancellationToken);
 
-        return orderedRestaurants.Select(r => new RestaurantDto
-        {
-            Id = r!.Id,
-            Title = r.Title,
-            PreviewImage = r.PreviewImage,
-            Latitude = r.Latitude,
-            Longitude = r.Longitude,
-            Description = r.Description,
-            AverageRating = r.AverageRating,
-            ReviewCount = r.ReviewCount,
-            OwnerId = r.OwnerId,
-            OwnerName = r.Owner.FullName,
-            CreatedAt = r.CreatedAt
-        });
+        return restaurants
+            .Select(r => new RestaurantDto
+            {
+                Id = r.Id,
+                Title = r.Title,
+                PreviewImage = r.PreviewImage,
+                Latitude = r.Latitude,
+                Longitude = r.Longitude,
+                Description = r.Description,
+                AverageRating = r.AverageRating,
+                ReviewCount = r.ReviewCount,
+                OwnerId = r.OwnerId,
+                OwnerName = r.Owner.FullName,
+                CreatedAt = r.CreatedAt
+            })
+            .ToList();
     }
 }
