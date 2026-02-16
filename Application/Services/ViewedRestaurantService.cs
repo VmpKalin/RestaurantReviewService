@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ToptalFinialSolution.Application.DTOs;
 using ToptalFinialSolution.Application.Interfaces;
 using ToptalFinialSolution.Domain.Enums;
+using ToptalFinialSolution.Domain.Exceptions;
 using ToptalFinialSolution.Domain.Interfaces;
 using ToptalFinialSolution.Infrastructure.Data;
 
@@ -19,7 +20,7 @@ public class ViewedRestaurantService(
         var user = await unitOfWork.Users.GetByIdAsync(userId);
         if (user == null || user.UserType != UserType.Reviewer)
         {
-            throw new UnauthorizedAccessException("Only reviewers can record restaurant views");
+            throw new ForbiddenException("Only reviewers can record restaurant views");
         }
 
         // Verify restaurant exists
@@ -39,7 +40,7 @@ public class ViewedRestaurantService(
         var user = await unitOfWork.Users.GetByIdAsync(userId);
         if (user == null || user.UserType != UserType.Reviewer)
         {
-            throw new UnauthorizedAccessException("Only reviewers can view recently viewed restaurants");
+            throw new ForbiddenException("Only reviewers can view recently viewed restaurants");
         }
 
         // Get restaurant IDs from Redis

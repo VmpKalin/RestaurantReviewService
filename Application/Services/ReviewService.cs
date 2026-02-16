@@ -2,6 +2,7 @@ using ToptalFinialSolution.Application.DTOs;
 using ToptalFinialSolution.Application.Interfaces;
 using ToptalFinialSolution.Domain.Entities;
 using ToptalFinialSolution.Domain.Enums;
+using ToptalFinialSolution.Domain.Exceptions;
 using ToptalFinialSolution.Domain.Interfaces;
 
 namespace ToptalFinialSolution.Application.Services;
@@ -47,7 +48,7 @@ public class ReviewService(IUnitOfWork unitOfWork) : IReviewService
         var reviewer = await unitOfWork.Users.GetByIdAsync(reviewerId);
         if (reviewer == null || reviewer.UserType != UserType.Reviewer)
         {
-            throw new UnauthorizedAccessException("Only reviewers can create reviews");
+            throw new ForbiddenException("Only reviewers can create reviews");
         }
 
         // Verify restaurant exists

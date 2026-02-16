@@ -1,7 +1,9 @@
+using NetTopologySuite.Geometries;
 using ToptalFinialSolution.Application.DTOs;
 using ToptalFinialSolution.Application.Interfaces;
 using ToptalFinialSolution.Domain.Entities;
 using ToptalFinialSolution.Domain.Enums;
+using ToptalFinialSolution.Domain.Exceptions;
 using ToptalFinialSolution.Domain.Interfaces;
 
 namespace ToptalFinialSolution.Application.Services;
@@ -20,8 +22,15 @@ public class RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodi
             query.TitleFilter,
             query.Latitude,
             query.Longitude,
-            query.RadiusInMiles
+            query.RadiusKm
         );
+
+        // Build search point for distance calculation when location search is active
+        Point? searchPoint = null;
+        if (query.Latitude.HasValue && query.Longitude.HasValue && query.RadiusKm.HasValue)
+        {
+            searchPoint = new Point(query.Longitude.Value, query.Latitude.Value) { SRID = 4326 };
+        }
 
         var restaurantDtos = restaurants.Select(r => new RestaurantDto
         {
@@ -35,7 +44,10 @@ public class RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodi
             ReviewCount = r.ReviewCount,
             OwnerId = r.OwnerId,
             OwnerName = r.Owner.FullName,
-            CreatedAt = r.CreatedAt
+            CreatedAt = r.CreatedAt,
+            DistanceKm = searchPoint != null && r.Location != null
+                ? Math.Round(CalculateDistanceKm(query.Latitude!.Value, query.Longitude!.Value, r.Latitude, r.Longitude), 2)
+                : null
         });
 
         return new PagedResult<RestaurantDto>
@@ -46,6 +58,23 @@ public class RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodi
             TotalCount = totalCount
         };
     }
+
+    /// <summary>
+    /// Calculates the great-circle distance between two points using the Haversine formula.
+    /// </summary>
+    private static double CalculateDistanceKm(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double earthRadiusKm = 6371.0;
+        var dLat = DegreesToRadians(lat2 - lat1);
+        var dLon = DegreesToRadians(lon2 - lon1);
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(DegreesToRadians(lat1)) * Math.Cos(DegreesToRadians(lat2)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return earthRadiusKm * c;
+    }
+
+    private static double DegreesToRadians(double degrees) => degrees * Math.PI / 180.0;
 
     public async Task<RestaurantDto?> GetRestaurantByIdAsync(Guid id)
     {
@@ -74,13 +103,13 @@ public class RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodi
         var owner = await unitOfWork.Users.GetByIdAsync(ownerId);
         if (owner == null || owner.UserType != UserType.Owner)
         {
-            throw new UnauthorizedAccessException("Only owners can create restaurants");
+            throw new ForbiddenException("Only owners can create restaurants");
         }
 
         double latitude, longitude;
 
         // Determine coordinates
-        if (request.Latitude.HasValue && request.Longitude.HasValue)
+        if (request is { Latitude: not null, Longitude: not null })
         {
             latitude = request.Latitude.Value;
             longitude = request.Longitude.Value;
@@ -143,7 +172,7 @@ public class RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodi
         // Verify ownership
         if (restaurant.OwnerId != ownerId)
         {
-            throw new UnauthorizedAccessException("You can only update your own restaurants");
+            throw new ForbiddenException("You can only update your own restaurants");
         }
 
         // Update fields if provided
@@ -211,7 +240,7 @@ public class RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodi
         // Verify ownership
         if (restaurant.OwnerId != ownerId)
         {
-            throw new UnauthorizedAccessException("You can only delete your own restaurants");
+            throw new ForbiddenException("You can only delete your own restaurants");
         }
 
         await unitOfWork.Restaurants.DeleteAsync(restaurant);

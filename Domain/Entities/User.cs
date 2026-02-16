@@ -15,5 +15,4 @@ public class User
     // Navigation properties
     public ICollection<Restaurant> Restaurants { get; set; } = new List<Restaurant>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
-    public ICollection<ViewedRestaurant> ViewedRestaurants { get; set; } = new List<ViewedRestaurant>();
 }

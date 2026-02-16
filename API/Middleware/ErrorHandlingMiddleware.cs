@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using ToptalFinialSolution.Domain.Exceptions;
 
 namespace ToptalFinialSolution.API.Middleware;
 
@@ -20,35 +21,20 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
 
     private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        var code = HttpStatusCode.InternalServerError;
-        var result = string.Empty;
-
-        switch (exception)
+        var (statusCode, message) = exception switch
         {
-            case KeyNotFoundException:
-                code = HttpStatusCode.NotFound;
-                result = JsonSerializer.Serialize(new { message = exception.Message });
-                break;
-            case UnauthorizedAccessException:
-                code = HttpStatusCode.Forbidden;
-                result = JsonSerializer.Serialize(new { message = exception.Message });
-                break;
-            case InvalidOperationException:
-                code = HttpStatusCode.BadRequest;
-                result = JsonSerializer.Serialize(new { message = exception.Message });
-                break;
-            case ArgumentException:
-                code = HttpStatusCode.BadRequest;
-                result = JsonSerializer.Serialize(new { message = exception.Message });
-                break;
-            default:
-                result = JsonSerializer.Serialize(new { message = "An internal server error occurred" });
-                break;
-        }
+            KeyNotFoundException ex => (HttpStatusCode.NotFound, ex.Message),
+            ForbiddenException ex => (HttpStatusCode.Forbidden, ex.Message),
+            UnauthorizedAccessException ex => (HttpStatusCode.Unauthorized, ex.Message),
+            InvalidOperationException ex => (HttpStatusCode.BadRequest, ex.Message),
+            ArgumentException ex => (HttpStatusCode.BadRequest, ex.Message),
+            _ => (HttpStatusCode.InternalServerError, "An internal server error occurred")
+        };
 
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)code;
+        context.Response.StatusCode = (int)statusCode;
 
+        var result = JsonSerializer.Serialize(new { message });
         return context.Response.WriteAsync(result);
     }
 }

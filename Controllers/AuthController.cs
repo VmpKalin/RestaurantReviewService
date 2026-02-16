@@ -17,15 +17,8 @@ public class AuthController(IAuthService authService) : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponse>> SignUp([FromBody] SignUpRequest request)
     {
-        try
-        {
-            var response = await authService.SignUpAsync(request);
-            return Ok(response);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var response = await authService.SignUpAsync(request);
+        return Ok(response);
     }
 
     /// <summary>
@@ -35,15 +28,8 @@ public class AuthController(IAuthService authService) : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
     {
-        try
-        {
-            var response = await authService.LoginAsync(request);
-            return Ok(response);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
+        var response = await authService.LoginAsync(request);
+        return Ok(response);
     }
 
     /// <summary>

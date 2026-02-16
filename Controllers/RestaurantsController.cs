@@ -56,20 +56,9 @@ public class RestaurantsController(
     [Authorize(Roles = "Owner")]
     public async Task<ActionResult<RestaurantDto>> CreateRestaurant([FromBody] CreateRestaurantRequest request)
     {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var restaurant = await restaurantService.CreateRestaurantAsync(request, userId);
-            return CreatedAtAction(nameof(GetRestaurant), new { id = restaurant.Id }, restaurant);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
+        var userId = GetCurrentUserId();
+        var restaurant = await restaurantService.CreateRestaurantAsync(request, userId);
+        return CreatedAtAction(nameof(GetRestaurant), new { id = restaurant.Id }, restaurant);
     }
 
     /// <summary>
@@ -79,24 +68,9 @@ public class RestaurantsController(
     [Authorize(Roles = "Owner")]
     public async Task<ActionResult<RestaurantDto>> UpdateRestaurant(Guid id, [FromBody] UpdateRestaurantRequest request)
     {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var restaurant = await restaurantService.UpdateRestaurantAsync(id, request, userId);
-            return Ok(restaurant);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var userId = GetCurrentUserId();
+        var restaurant = await restaurantService.UpdateRestaurantAsync(id, request, userId);
+        return Ok(restaurant);
     }
 
     /// <summary>
@@ -106,20 +80,9 @@ public class RestaurantsController(
     [Authorize(Roles = "Owner")]
     public async Task<ActionResult> DeleteRestaurant(Guid id)
     {
-        try
-        {
-            var userId = GetCurrentUserId();
-            await restaurantService.DeleteRestaurantAsync(id, userId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
+        var userId = GetCurrentUserId();
+        await restaurantService.DeleteRestaurantAsync(id, userId);
+        return NoContent();
     }
 
     /// <summary>
@@ -129,15 +92,8 @@ public class RestaurantsController(
     [Authorize(Roles = "Reviewer")]
     public async Task<ActionResult<IEnumerable<RestaurantDto>>> GetRecentlyViewed()
     {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var restaurants = await viewedRestaurantService.GetRecentlyViewedAsync(userId);
-            return Ok(restaurants);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
+        var userId = GetCurrentUserId();
+        var restaurants = await viewedRestaurantService.GetRecentlyViewedAsync(userId);
+        return Ok(restaurants);
     }
 }

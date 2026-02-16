@@ -35,23 +35,8 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
     [Authorize(Roles = "Reviewer")]
     public async Task<ActionResult<ReviewDto>> CreateReview([FromBody] CreateReviewRequest request)
     {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var review = await reviewService.CreateReviewAsync(request, userId);
-            return CreatedAtAction(nameof(GetReviews), new { restaurantId = review.RestaurantId }, review);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
+        var userId = GetCurrentUserId();
+        var review = await reviewService.CreateReviewAsync(request, userId);
+        return CreatedAtAction(nameof(GetReviews), new { restaurantId = review.RestaurantId }, review);
     }
 }

@@ -10,7 +10,7 @@ public interface IRestaurantRepository : IRepository<Restaurant>
         string? titleFilter = null, 
         double? latitude = null, 
         double? longitude = null, 
-        double? radiusInMiles = null);
+        double? radiusKm = null);
     
     Task<Restaurant?> GetByIdWithReviewsAsync(Guid id);
 }

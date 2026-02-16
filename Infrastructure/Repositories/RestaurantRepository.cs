@@ -14,7 +14,7 @@ public class RestaurantRepository(ApplicationDbContext context) : Repository<Res
         string? titleFilter = null, 
         double? latitude = null, 
         double? longitude = null, 
-        double? radiusInMiles = null)
+        double? radiusKm = null)
     {
         var query = _dbSet.Include(r => r.Owner).AsQueryable();
 
@@ -24,21 +24,27 @@ public class RestaurantRepository(ApplicationDbContext context) : Repository<Res
             query = query.Where(r => r.Title.Contains(titleFilter));
         }
 
+        Point? searchPoint = null;
+
         // Apply location filter using PostGIS ST_DWithin (uses GIST index)
-        if (latitude.HasValue && longitude.HasValue && radiusInMiles.HasValue)
+        if (latitude.HasValue && longitude.HasValue && radiusKm.HasValue)
         {
-            var radiusInMeters = radiusInMiles.Value * 1609.34;
-            var searchPoint = new Point(longitude.Value, latitude.Value) { SRID = 4326 };
+            var radiusMeters = radiusKm.Value * 1000;
+            searchPoint = new Point(longitude.Value, latitude.Value) { SRID = 4326 };
 
             query = query.Where(r =>
                 r.Location != null &&
-                r.Location.IsWithinDistance(searchPoint, radiusInMeters));
+                r.Location.IsWithinDistance(searchPoint, radiusMeters));
         }
 
         var totalCount = await query.CountAsync();
-        
-        var restaurants = await query
-            .OrderByDescending(r => r.CreatedAt)
+
+        // Order by distance when searching by location, otherwise by creation date
+        var orderedQuery = searchPoint != null
+            ? query.OrderBy(r => r.Location!.Distance(searchPoint))
+            : query.OrderByDescending(r => r.CreatedAt);
+
+        var restaurants = await orderedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

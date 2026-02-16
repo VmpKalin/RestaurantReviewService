@@ -26,7 +26,6 @@ public class Restaurant
     // Navigation properties
     public User Owner { get; set; } = null!;
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
-    public ICollection<ViewedRestaurant> ViewedRestaurants { get; set; } = new List<ViewedRestaurant>();
     
     /// <summary>
     /// Sets both lat/lng properties and the PostGIS Location point.
