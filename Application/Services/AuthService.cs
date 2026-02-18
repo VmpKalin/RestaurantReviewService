@@ -1,3 +1,4 @@
+using Konscious.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -106,15 +107,49 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) :
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    private const int DegreeOfParallelism = 4;
+    private const int MemorySize = 65536; // 64 MB
+    private const int Iterations = 3;
+    private const int HashSize = 32;
+    private const int SaltSize = 16;
+
     private static string HashPassword(string password)
     {
-        var hashedBytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(hashedBytes);
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
+        var hash = ComputeArgon2Hash(password, salt);
+
+        var result = new byte[SaltSize + HashSize];
+        Buffer.BlockCopy(salt, 0, result, 0, SaltSize);
+        Buffer.BlockCopy(hash, 0, result, SaltSize, HashSize);
+
+        return Convert.ToBase64String(result);
     }
 
-    private static bool VerifyPassword(string password, string passwordHash)
+    private static bool VerifyPassword(string password, string storedHash)
     {
-        var hash = HashPassword(password);
-        return hash == passwordHash;
+        var decoded = Convert.FromBase64String(storedHash);
+        if (decoded.Length != SaltSize + HashSize)
+        {
+            return false;
+        }
+
+        var salt = decoded[..SaltSize];
+        var expectedHash = decoded[SaltSize..];
+        var actualHash = ComputeArgon2Hash(password, salt);
+
+        return CryptographicOperations.FixedTimeEquals(expectedHash, actualHash);
+    }
+
+    private static byte[] ComputeArgon2Hash(string password, byte[] salt)
+    {
+        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password))
+        {
+            Salt = salt,
+            DegreeOfParallelism = DegreeOfParallelism,
+            MemorySize = MemorySize,
+            Iterations = Iterations
+        };
+
+        return argon2.GetBytes(HashSize);
     }
 }

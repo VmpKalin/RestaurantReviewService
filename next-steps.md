@@ -19,3 +19,9 @@ RadiusKm should be positive (and ideally capped at a reasonable max)
 4. No DTO-Level Enforcement of "Coordinates OR Address Required"
 The spec says coordinates are required but can be provided via address. Currently the "either coordinates or address" rule is only enforced in the service layer. A IValidatableObject implementation on CreateRestaurantRequest would give better API error responses (400 with model state errors) instead of a generic InvalidOperationException.
 Want me to fix these issues? The recently-viewed ordering bug and the password hashing are the most impactful.
+
+Fix these issues
+1. Rewrite query to support sorting from redis, when we get values from db
+2. It should use Argon2 paswrod hashing alg
+3. Cover with validations
+4. 

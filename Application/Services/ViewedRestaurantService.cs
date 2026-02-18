@@ -46,12 +46,14 @@ public class ViewedRestaurantService(
             return [];
         }
 
-        var restaurants = await context.Restaurants
+        var restaurantsById = await context.Restaurants
             .Where(r => restaurantIds.Contains(r.Id))
             .Include(r => r.Owner)
-            .ToListAsync(cancellationToken);
+            .ToDictionaryAsync(r => r.Id, cancellationToken);
 
-        return restaurants
+        return restaurantIds
+            .Where(restaurantsById.ContainsKey)
+            .Select(id => restaurantsById[id])
             .Select(r => new RestaurantDto
             {
                 Id = r.Id,
