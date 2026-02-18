@@ -77,11 +77,7 @@ public class ReviewService(IUnitOfWork unitOfWork) : IReviewService
 
         await unitOfWork.Reviews.AddAsync(review, cancellationToken);
 
-        var averageRating = await unitOfWork.Reviews.GetAverageRatingByRestaurantAsync(request.RestaurantId, cancellationToken);
-        var reviewCount = await unitOfWork.Reviews.GetReviewCountByRestaurantAsync(request.RestaurantId, cancellationToken);
-
-        restaurant.AverageRating = (averageRating * reviewCount + request.Rating) / (reviewCount + 1);
-        restaurant.ReviewCount = reviewCount + 1;
+        restaurant.AddReviewRating(request.Rating);
 
         await unitOfWork.Restaurants.UpdateAsync(restaurant);
         await unitOfWork.SaveChangesAsync(cancellationToken);

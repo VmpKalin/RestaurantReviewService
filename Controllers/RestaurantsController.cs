@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using ToptalFinialSolution.API.Extensions;
 using ToptalFinialSolution.API.Filters;
 using ToptalFinialSolution.Application.DTOs;
 using ToptalFinialSolution.Application.Interfaces;
@@ -15,11 +15,6 @@ public class RestaurantsController(
     IViewedRestaurantService viewedRestaurantService)
     : ControllerBase
 {
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("User not authenticated"));
-    }
 
     /// <summary>
     /// Get all restaurants with pagination and filtering
@@ -56,7 +51,7 @@ public class RestaurantsController(
     [Authorize(Roles = "Owner")]
     public async Task<ActionResult<RestaurantDto>> CreateRestaurant([FromBody] CreateRestaurantRequest request, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetUserId();
         var restaurant = await restaurantService.CreateRestaurantAsync(request, userId, cancellationToken);
         return CreatedAtAction(nameof(GetRestaurant), new { id = restaurant.Id }, restaurant);
     }
@@ -68,7 +63,7 @@ public class RestaurantsController(
     [Authorize(Roles = "Owner")]
     public async Task<ActionResult<RestaurantDto>> UpdateRestaurant(Guid id, [FromBody] UpdateRestaurantRequest request, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetUserId();
         var restaurant = await restaurantService.UpdateRestaurantAsync(id, request, userId, cancellationToken);
         return Ok(restaurant);
     }
@@ -80,7 +75,7 @@ public class RestaurantsController(
     [Authorize(Roles = "Owner")]
     public async Task<ActionResult> DeleteRestaurant(Guid id, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetUserId();
         await restaurantService.DeleteRestaurantAsync(id, userId, cancellationToken);
         return NoContent();
     }
@@ -92,7 +87,7 @@ public class RestaurantsController(
     [Authorize(Roles = "Reviewer")]
     public async Task<ActionResult<IReadOnlyList<RestaurantDto>>> GetRecentlyViewed(CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetUserId();
         var restaurants = await viewedRestaurantService.GetRecentlyViewedAsync(userId, cancellationToken);
         return Ok(restaurants);
     }

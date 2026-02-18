@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using ToptalFinialSolution.API.Extensions;
 using ToptalFinialSolution.Application.DTOs;
 using ToptalFinialSolution.Application.Interfaces;
 
@@ -11,11 +11,6 @@ namespace ToptalFinialSolution.Controllers;
 [Authorize]
 public class ReviewsController(IReviewService reviewService) : ControllerBase
 {
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("User not authenticated"));
-    }
 
     /// <summary>
     /// Get all reviews with pagination and filtering
@@ -35,7 +30,7 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
     [Authorize(Roles = "Reviewer")]
     public async Task<ActionResult<ReviewDto>> CreateReview([FromBody] CreateReviewRequest request, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetUserId();
         var review = await reviewService.CreateReviewAsync(request, userId, cancellationToken);
         return CreatedAtAction(nameof(GetReviews), new { restaurantId = review.RestaurantId }, review);
     }

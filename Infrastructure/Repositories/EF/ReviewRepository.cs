@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using ToptalFinialSolution.Domain.Entities;
 using ToptalFinialSolution.Domain.Interfaces;
 using ToptalFinialSolution.Infrastructure.Data;
+using ToptalFinialSolution.Infrastructure.Repositories.Base;
+using ToptalFinialSolution.Infrastructure.Repositories.Base.EF;
 
 namespace ToptalFinialSolution.Infrastructure.Repositories;
 
@@ -36,8 +38,12 @@ public class ReviewRepository(ApplicationDbContext context) : Repository<Review>
 
     public async Task<double> GetAverageRatingByRestaurantAsync(Guid restaurantId, CancellationToken cancellationToken = default)
     {
-        var reviews = await DbSet.Where(r => r.RestaurantId == restaurantId).ToListAsync(cancellationToken);
-        return reviews.Count is > 0 ? reviews.Average(r => r.Rating) : 0;
+        var query = DbSet.Where(r => r.RestaurantId == restaurantId);
+
+        if (!await query.AnyAsync(cancellationToken))
+            return 0;
+
+        return await query.AverageAsync(r => r.Rating, cancellationToken);
     }
 
     public async Task<int> GetReviewCountByRestaurantAsync(Guid restaurantId, CancellationToken cancellationToken = default)

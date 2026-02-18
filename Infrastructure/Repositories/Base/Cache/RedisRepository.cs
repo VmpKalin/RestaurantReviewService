@@ -1,7 +1,7 @@
 using StackExchange.Redis;
 using ToptalFinialSolution.Domain.Interfaces;
 
-namespace ToptalFinialSolution.Infrastructure.Repositories;
+namespace ToptalFinialSolution.Infrastructure.Repositories.Base.Cache;
 
 /// <summary>
 /// Base Redis repository implementation using Sorted Sets for time-based ordering.
@@ -14,10 +14,10 @@ public abstract class RedisRepository<TKey, TValue>(
     int expirationDays = 90)
     : IRedisRepository<TKey, TValue>
 {
-    protected readonly IDatabase _db = redis.GetDatabase();
-    protected readonly string _keyPrefix = keyPrefix;
-    protected readonly int _maxEntries = maxEntries;
-    protected readonly TimeSpan _expiration = TimeSpan.FromDays(expirationDays);
+    protected readonly IDatabase Db = redis.GetDatabase();
+    protected readonly string KeyPrefix = keyPrefix;
+    protected readonly int MaxEntries = maxEntries;
+    protected readonly TimeSpan Expiration = TimeSpan.FromDays(expirationDays);
 
     public virtual async Task AddAsync(TKey key, TValue value, CancellationToken cancellationToken = default)
     {
@@ -30,15 +30,15 @@ public abstract class RedisRepository<TKey, TValue>(
         var redisKey = GetRedisKey(key);
         var redisValue = SerializeValue(value);
 
-        await _db.SortedSetAddAsync(redisKey, redisValue, score);
-        await _db.SortedSetRemoveRangeByRankAsync(redisKey, 0, -_maxEntries - 1);
-        await _db.KeyExpireAsync(redisKey, _expiration);
+        await Db.SortedSetAddAsync(redisKey, redisValue, score);
+        await Db.SortedSetRemoveRangeByRankAsync(redisKey, 0, -MaxEntries - 1);
+        await Db.KeyExpireAsync(redisKey, Expiration);
     }
 
     public virtual async Task<IReadOnlyList<TValue>> GetRecentAsync(TKey key, int count, CancellationToken cancellationToken = default)
     {
         var redisKey = GetRedisKey(key);
-        var entries = await _db.SortedSetRangeByRankAsync(redisKey, -count, -1, Order.Descending);
+        var entries = await Db.SortedSetRangeByRankAsync(redisKey, -count, -1, Order.Descending);
 
         return entries
             .Select(entry => DeserializeValue(entry))
@@ -49,33 +49,33 @@ public abstract class RedisRepository<TKey, TValue>(
     {
         var redisKey = GetRedisKey(key);
         var redisValue = SerializeValue(value);
-        await _db.SortedSetRemoveAsync(redisKey, redisValue);
+        await Db.SortedSetRemoveAsync(redisKey, redisValue);
     }
 
     public virtual async Task ClearAsync(TKey key, CancellationToken cancellationToken = default)
     {
         var redisKey = GetRedisKey(key);
-        await _db.KeyDeleteAsync(redisKey);
+        await Db.KeyDeleteAsync(redisKey);
     }
 
     public virtual async Task<long> CountAsync(TKey key, CancellationToken cancellationToken = default)
     {
         var redisKey = GetRedisKey(key);
-        return await _db.SortedSetLengthAsync(redisKey);
+        return await Db.SortedSetLengthAsync(redisKey);
     }
 
     public virtual async Task<bool> ExistsAsync(TKey key, TValue value, CancellationToken cancellationToken = default)
     {
         var redisKey = GetRedisKey(key);
         var redisValue = SerializeValue(value);
-        var score = await _db.SortedSetScoreAsync(redisKey, redisValue);
+        var score = await Db.SortedSetScoreAsync(redisKey, redisValue);
         return score.HasValue;
     }
 
     /// <summary>
     /// Constructs the full Redis key: {prefix}{key}
     /// </summary>
-    protected virtual string GetRedisKey(TKey key) => $"{_keyPrefix}{key}";
+    protected virtual string GetRedisKey(TKey key) => $"{KeyPrefix}{key}";
 
     protected abstract string SerializeValue(TValue value);
     protected abstract TValue DeserializeValue(RedisValue redisValue);

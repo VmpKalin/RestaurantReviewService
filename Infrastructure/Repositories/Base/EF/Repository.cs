@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 using ToptalFinialSolution.Domain.Interfaces;
 using ToptalFinialSolution.Infrastructure.Data;
 
-namespace ToptalFinialSolution.Infrastructure.Repositories;
+namespace ToptalFinialSolution.Infrastructure.Repositories.Base.EF;
 
 public class Repository<T>(ApplicationDbContext context) : IRepository<T>
     where T : class

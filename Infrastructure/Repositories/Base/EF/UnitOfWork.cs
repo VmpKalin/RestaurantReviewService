@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using ToptalFinialSolution.Domain.Interfaces;
 using ToptalFinialSolution.Infrastructure.Data;
 
-namespace ToptalFinialSolution.Infrastructure.Repositories;
+namespace ToptalFinialSolution.Infrastructure.Repositories.Base.EF;
 
 public class UnitOfWork(
     ApplicationDbContext context,

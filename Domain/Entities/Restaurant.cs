@@ -36,4 +36,31 @@ public class Restaurant
         Longitude = longitude;
         Location = new Point(longitude, latitude) { SRID = 4326 };
     }
+
+    /// <summary>
+    /// Incrementally updates AverageRating and ReviewCount when a new review is added.
+    /// Avoids extra DB queries by computing from the stored denormalized values.
+    /// </summary>
+    public void AddReviewRating(int rating)
+    {
+        AverageRating = Math.Round(((AverageRating * ReviewCount) + rating) / (ReviewCount + 1), 2);
+        ReviewCount++;
+    }
+
+    /// <summary>
+    /// Recalculates AverageRating and ReviewCount from the loaded Reviews collection.
+    /// Requires Reviews navigation property to be loaded.
+    /// </summary>
+    public void RecalculateRating()
+    {
+        if (Reviews.Count == 0)
+        {
+            AverageRating = 0;
+            ReviewCount = 0;
+            return;
+        }
+
+        ReviewCount = Reviews.Count;
+        AverageRating = Math.Round(Reviews.Average(r => r.Rating), 2);
+    }
 }

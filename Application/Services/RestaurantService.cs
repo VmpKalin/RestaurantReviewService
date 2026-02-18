@@ -77,6 +77,8 @@ public class RestaurantService(IUnitOfWork unitOfWork, IGeocodingService geocodi
         var restaurant = await unitOfWork.Restaurants.GetByIdWithReviewsAsync(id, cancellationToken);
         if (restaurant is null) return null;
 
+        restaurant.RecalculateRating();
+
         return new RestaurantDto
         {
             Id = restaurant.Id,

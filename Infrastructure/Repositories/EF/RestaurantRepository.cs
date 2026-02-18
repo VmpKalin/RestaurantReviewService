@@ -3,6 +3,8 @@ using NetTopologySuite.Geometries;
 using ToptalFinialSolution.Domain.Entities;
 using ToptalFinialSolution.Domain.Interfaces;
 using ToptalFinialSolution.Infrastructure.Data;
+using ToptalFinialSolution.Infrastructure.Repositories.Base;
+using ToptalFinialSolution.Infrastructure.Repositories.Base.EF;
 
 namespace ToptalFinialSolution.Infrastructure.Repositories;
 

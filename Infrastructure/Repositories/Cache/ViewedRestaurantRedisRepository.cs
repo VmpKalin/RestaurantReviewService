@@ -1,7 +1,9 @@
 using StackExchange.Redis;
 using ToptalFinialSolution.Domain.Interfaces;
+using ToptalFinialSolution.Infrastructure.Repositories.Base;
+using ToptalFinialSolution.Infrastructure.Repositories.Base.Cache;
 
-namespace ToptalFinialSolution.Infrastructure.Repositories;
+namespace ToptalFinialSolution.Infrastructure.Repositories.Cache;
 
 /// <summary>
 /// Redis repository for storing viewed restaurants history.

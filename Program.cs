@@ -12,6 +12,9 @@ using ToptalFinialSolution.Application.Services;
 using ToptalFinialSolution.Domain.Interfaces;
 using ToptalFinialSolution.Infrastructure.Data;
 using ToptalFinialSolution.Infrastructure.Repositories;
+using ToptalFinialSolution.Infrastructure.Repositories.Base;
+using ToptalFinialSolution.Infrastructure.Repositories.Base.EF;
+using ToptalFinialSolution.Infrastructure.Repositories.Cache;
 using ToptalFinialSolution.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
