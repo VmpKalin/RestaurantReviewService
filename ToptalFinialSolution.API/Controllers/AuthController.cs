@@ -4,7 +4,7 @@ using System.Security.Claims;
 using ToptalFinialSolution.Application.DTOs;
 using ToptalFinialSolution.Application.Interfaces;
 
-namespace ToptalFinialSolution.Controllers;
+namespace ToptalFinialSolution.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

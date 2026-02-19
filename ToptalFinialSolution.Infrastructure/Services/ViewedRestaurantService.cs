@@ -6,7 +6,7 @@ using ToptalFinialSolution.Domain.Exceptions;
 using ToptalFinialSolution.Domain.Interfaces;
 using ToptalFinialSolution.Infrastructure.Data;
 
-namespace ToptalFinialSolution.Application.Services;
+namespace ToptalFinialSolution.Infrastructure.Services;
 
 public class ViewedRestaurantService(
     IUnitOfWork unitOfWork,
